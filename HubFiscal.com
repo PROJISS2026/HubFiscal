@@ -1,1 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HubFiscal - Gestão de Declarações</title>
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-card: #1e1e1e;
+            --primary: #bb86fc;
+            --secondary: #03dac6;
+            --danger: #ff7575;
+            --text-main: #e0e0e0;
+            --text-dim: #b0b0b0;
+        }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding-bottom: 50px;
+        }
+
+        /* Header */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 10%;
+            background-color: var(--bg-card);
+            border-bottom: 1px solid #333;
+        }
+
+        .logo { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
+
+        /* Container */
+        .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+
+        .hero { text-align: center; margin-bottom: 40px; }
+
+        /* Stats */
+        .stat-item {
+            background: var(--bg-card);
+            padding: 20px 50px;
+            border-radius: 15px;
+            border: 2px solid var(--primary);
+            display: inline-block;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .stat-number { display: block; font-size: 3.5rem; font-weight: bold; color: var(--secondary); }
+
+        /* Tabela e Busca */
+        .data-section {
+            background: var(--bg-card);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+        input, select {
+            background: #2a2a2a; border: 1px solid #444; color: white;
+            padding: 10px; border-radius: 6px; outline: none;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { color: var(--primary); text-align: left; padding: 12px; border-bottom: 2px solid #333; }
+        td { padding: 12px; border-bottom: 1px solid #333; }
+
+        /* Badges e Botões */
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .status-concluido { background: rgba(3, 218, 198, 0.15); color: var(--secondary); }
+        .status-pendente { background: rgba(255, 117, 117, 0.15); color: var(--danger); }
+
+        .btn-main { background: var(--primary); color: #000; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-main:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(187, 134, 252, 0.3); }
+        .btn-del { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .btn-del:hover { background: var(--danger); color: white; }
+
+        /* Modais */
+        .modal {
+            display: none; position: fixed; top:0; left:0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 100;
+        }
+        .modal-content { background: var(--bg-card); padding: 30px; border-radius: 12px; width: 400px; border: 1px solid var(--primary); }
+        .modal-content h2 { margin-bottom: 20px; }
+        .modal-content input { width: 100%; margin-bottom: 15px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+        /* Tela de Login Específica */
+        #login-screen {
+            position: fixed; top:0; left:0; width:100%; height:100%; 
+            background: var(--bg-dark); z-index: 1000; 
+            display: flex; justify-content: center; align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="modal-content" style="width: 350px;">
+            <h2 style="text-align: center; color: var(--primary);">HubFiscal Login</h2>
+            <p style="text-align: center; margin-bottom: 20px; color: var(--text-dim);">Entre com suas credenciais</p>
+            <input type="text" id="userIn" placeholder="Usuário (admin)">
+            <input type="password" id="passIn" placeholder="Senha (123)">
+            <button class="btn-main" onclick="autenticar()" style="width: 100%;">Entrar no Sistema</button>
+            <p id="login-error" style="color: var(--danger); font-size: 0.8rem; margin-top: 10px; display: none; text-align: center;">Usuário ou senha incorretos!</p>
+        </div>
+    </div>
+
+    <header class="navbar">
+        <div class="logo">Hub Fiscal</div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span id="user-display" style="color: var(--text-dim); font-size: 0.9rem;"></span>
+            <button onclick="logout()" style="background:none; border: 1px solid #444; color: var(--text-dim); padding: 5px 10px; border-radius: 4px; cursor: pointer;">Sair</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <h1>Painel de Controle</h1>
+            <div class="stat-item">
+                <span id="contador" class="stat-number">0</span>
+                <span style="color: var(--text-dim)">Empresas Sob Gestão</span>
+            </div>
+            <br>
+            <button class="btn-main" onclick="abrirModal()">+ Nova Empresa</button>
+        </section>
+
+        <section class="data-section">
+            <div class="table-header">
+                <h2>Empresas Cadastradas</h2>
+                <input type="text" id="busca" onkeyup="filtrar()" placeholder="Filtrar por nome...">
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Empresa</th>
+                        <th>CNPJ</th>
+                        <th>Status</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="listaEmpresas"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2>Cadastrar Empresa</h2>
+            <input type="text" id="nomeIn" placeholder="Nome da Empresa">
+            <input type="text" id="cnpjIn" placeholder="CNPJ (00.000.000/0001-00)">
+            <select id="statusIn" style="width: 100%;">
+                <option value="Concluído">Concluído</option>
+                <option value="Pendente">Pendente</option>
+            </select>
+            <div class="modal-buttons">
+                <button onclick="fecharModal()" style="background:none; border:none; color:#777; cursor:pointer">Cancelar</button>
+                <button class="btn-main" onclick="salvar()">Salvar Empresa</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Lógica de Autenticação ---
+        const USER_CORRETO = "admin";
+        const SENHA_CORRETA = "123";
+
+        function autenticar() {
+            const user = document.getElementById('userIn').value;
+            const pass = document.getElementById('passIn').value;
+            const erroMsg = document.getElementById('login-error');
+
+            if (user === USER_CORRETO && pass === SENHA_CORRETA) {
+                localStorage.setItem('logado', 'true');
+                localStorage.setItem('usuarioNome', user);
+                verificarSessao();
+            } else {
+                erroMsg.style.display = 'block';
+            }
+        }
+
+        function verificarSessao() {
+            const estaLogado = localStorage.getItem('logado');
+            const telaLogin = document.getElementById('login-screen');
+            const userDisplay = document.getElementById('user-display');
+
+            if (estaLogado === 'true') {
+                telaLogin.style.display = 'none';
+                userDisplay.innerText = `Olá, ${localStorage.getItem('usuarioNome')}`;
+            } else {
+                telaLogin.style.display = 'flex';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('logado');
+            localStorage.removeItem('usuarioNome');
+            location.reload();
+        }
+
+        // --- Lógica de Dados ---
+        let empresas = JSON.parse(localStorage.getItem('minhasEmpresas')) || [
+            { nome: "Tech Solutions", cnpj: "12.345.678/0001-90", status: "Concluído" }
+        ];
+
+        function render() {
+            const lista = document.getElementById('listaEmpresas');
+            lista.innerHTML = "";
+            
+            empresas.forEach((emp, i) => {
+                const badgeClass = emp.status === "Concluído" ? "status-concluido" : "status-pendente";
+                lista.innerHTML += `
+                    <tr>
+                        <td>${emp.nome}</td>
+                        <td>${emp.cnpj}</td>
+                        <td><span class="badge ${badgeClass}">${emp.status}</span></td>
+                        <td><button class="btn-del" onclick="remover(${i})">Excluir</button></td>
+                    </tr>
+                `;
+            });
+            document.getElementById('contador').innerText = empresas.length;
+            localStorage.setItem('minhasEmpresas', JSON.stringify(empresas));
+        }
+
+        function salvar() {
+            const nome = document.getElementById('nomeIn').value;
+            const cnpj = document.getElementById('cnpjIn').value;
+            const status = document.getElementById('statusIn').value;
+
+            if(nome && cnpj) {
+                empresas.push({ nome, cnpj, status });
+                render();
+                fecharModal();
+                document.getElementById('nomeIn').value = "";
+                document.getElementById('cnpjIn').value = "";
+            } else { alert("Preencha todos os campos!"); }
+        }
+
+        function remover(i) {
+            if(confirm("Deseja realmente excluir esta empresa?")) {
+                empresas.splice(i, 1);
+                render();
+            }
+        }
+
+        function filtrar() {
+            let busca = document.getElementById('busca').value.toLowerCase();
+            let linhas = document.querySelectorAll('#listaEmpresas tr');
+            linhas.forEach(linha => {
+                linha.style.display = linha.innerText.toLowerCase().includes(busca) ? "" : "none";
+            });
+        }
+
+        function abrirModal() { document.getElementById('modal').style.display = 'flex'; }
+        function fecharModal() { document.getElementById('modal').style.display = 'none'; }
+
+        // Inicialização Combinada
+        window.onload = function() {
+            verificarSessao();
+            render();
+        };
+    </script>
+</body>
+</html>
